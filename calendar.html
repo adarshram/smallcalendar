@@ -1,0 +1,438 @@
+<html>
+<head>
+<title>Basic Small Calendar</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<style type="text/css">
+.small_calendar_canvas{
+	border: 1px solid lightblue;
+	border-radius: 5px;
+        box-shadow: 10px 10px 5px #888888;
+       overflow: hidden;
+       width: 238px;
+	position:absolute;
+	z-index:9999;
+}
+.css-first-month{
+	background:lightBlue;
+}
+.css-dates-holder{
+
+	overflow-y:auto;
+	width:110%;
+	  height: 246px;
+}
+.small_calendar_canvas::-webkit-scrollbar { 
+    display: none; 
+}
+.css-dates-holder::-webkit-scrollbar { 
+    display: none; 
+}
+::-webkit-scrollbar { 
+    display: none; 
+}
+.css-month-header{
+	text-align:center;
+	width:100%;
+	background:#eee;
+	height: 35px;
+	padding-top: 5px;
+
+}
+.css-days-header-holder{
+	width: 110%;
+		background:#eee;
+
+}
+.css-active,.css-inactive{
+	border: 1px solid lightGrey;
+    float: left;
+    padding: 10px;
+    text-align: center;
+    width: 4.85%;
+
+}
+.css-days-header{
+ background: none repeat scroll 0 0 #eee;
+    border-right: 1px solid lightGrey;
+    float: left;
+    height: 28px;
+    padding-top: 5px;
+    text-align: center;
+    vertical-align: middle;
+    width: 12.7%;
+}
+.css-days-inactive{
+	color:lightGrey;
+}
+.css-inactive{
+	color:lightGrey;
+
+}
+.css-active{
+	color:black;
+	cursor:pointer;
+
+	
+}
+.css-active:hover{
+	background:#D1BDD8;
+	color:white;
+}
+.css-today{
+	background:#421E4E;
+	color:white;
+}
+</style>
+<script type = "text/javascript">
+function SmallCalendar(opts){
+	
+
+	this.current_val = false;
+	this.day_milliseconds = 86400000;
+	if(!opts){
+		opts = [];
+	}
+	this.opts = opts;
+
+	
+	var weekday = [];
+	var month = [];	
+	var months = [];		
+	var default_opts = [];
+	default_opts['no_inactive_rows'] = 2;
+	default_opts['no_days'] = 180;
+	default_opts['disable_dates'] = [];
+
+	this.copyDefaultOpts = function(){
+		this.current_time = new Date(this.getDateFormat(new Date())).getTime();
+
+		for(var i in default_opts){
+			if(!this.opts[i]){
+			this.opts[i] = default_opts[i];
+			}
+		}
+
+		weekday[0]=  "Sunday";
+		weekday[1] = "Monday";
+		weekday[2] = "Tuesday";
+		weekday[3] = "Wednesday";
+		weekday[4] = "Thursday";
+		weekday[5] = "Friday";
+		weekday[6] = "Saturday";
+
+		month[0] = "January";
+		month[1] = "February";
+		month[2] = "March";
+		month[3] = "April";
+		month[4] = "May";
+		month[5] = "June";
+		month[6] = "July";
+		month[7] = "August";
+		month[8] = "September";
+		month[9] = "October";
+		month[10] = "November";
+		month[11] = "December";
+	}
+	this.setCurrentVal = function(v){
+		if(v !=''){
+			this.current_val = new Date(v).getTime();
+		}
+		
+		return this;
+	}
+	this.getCurrentVal = function(){
+		return this.current_val;
+	}
+	this.getClearRow = function(){
+		return '';
+		return '<div style="clear:both;height:0px;">&nbsp;</div>';
+	}
+	this.getDaysHeader = function(){
+		var write = '';
+		write += '<div class="css-days-header-holder">';
+		for(var i=1;i<7;i++){
+
+			write += '<div class="css-days-header';
+			
+			write += ' ">'+weekday[i].substr(0,2)+'</div>';
+		}
+		write += '<div class="css-days-header';
+		if(weekday[0] == 'Sunday'){
+				write += ' css-days-inactive '
+		}
+		write += '">'+weekday[0].substr(0,2)+'</div>';
+		write +='</div>';
+		write += this.getClearRow();
+		return write;
+
+	}
+	this.getMonthHeader = function(){
+		var write = '';
+		write += '<div class="css-month-header">';
+		var current_object = new Date(this.current_time);
+		write += month[current_object.getMonth()];
+		write += '&nbsp';
+		write += current_object.getFullYear();
+		write += '</div>';
+		write += this.getClearRow();
+		return write;
+
+	}
+
+	this.process = function(){
+		this.html =  this.drawDatesArea(this.generateDays());
+		return this;
+	}
+	this.getHtml = function(){
+		return this.html;
+	}
+
+
+	this.isActiveDate = function(object){
+		if(this.opts['disable_dates'].length>0){
+			for(var i=0;i<this.opts['disable_dates'].length;i++){
+
+
+
+
+				if(object.getTime() == new Date(this.opts['disable_dates'][i]).getTime()){
+
+					return false;
+				}	
+			}
+		}
+		if(object.getDay() == '0'){
+			return false;
+		}
+		if(object.getTime() < this.current_time){
+			return false;
+		}
+		return true;
+		
+	}
+	this.drawDatesArea = function(applicable_dates){
+		var last = applicable_dates.length;
+		var str = [];
+		var first_monday = false;
+		var active_day = false;
+		str.push(this.getMonthHeader());
+		str.push(this.getDaysHeader());
+		str.push('<div class="css-dates-holder">');
+		for(var i=0;i<applicable_dates.length;i++){
+
+			if(!first_monday && applicable_dates[i]['date_object'].getDay() == 1){
+				first_monday = true;
+			}
+			if(first_monday){
+				var write = '';
+				if(applicable_dates[i]['is_current']){
+							active_day = true;
+				}
+				write += '<div class="';
+				if(this.isActiveDate(applicable_dates[i]['date_object'])){
+					write += 'css-active js-active';
+					if(applicable_dates[i]['date_object'].getDate() == '1'){
+						write += ' css-first-month ';
+					}
+
+				}
+				else{
+					write += 'css-inactive js-inactive';
+				}
+
+				
+				
+				if(!this.current_val){
+					if(applicable_dates[i]['is_current']){
+						write += ' css-today ';
+					}
+				}
+				else if(this.getDateFormat(new Date(this.current_val)) == this.getDateFormat(applicable_dates[i]['date_object'])){
+	write += ' css-today ';
+
+}
+			
+				write += '" ';
+				write += ' data-date="'+this.getDateFormat(applicable_dates[i]['date_object'])+'" ';
+				write += ' data-month="'+month[applicable_dates[i]['date_object'].getMonth()]+' '+applicable_dates[i]['date_object'].getFullYear()+' " ';
+
+				write += '>';
+				write += applicable_dates[i]['date_object'].getDate()+'&nbsp;';
+				write += '</div>';
+				if(weekday[applicable_dates[i]['date_object'].getDay()] == 'Sunday'){
+							write += this.getClearRow();
+
+				}
+				
+	
+				str.push(write);
+			}
+
+		}
+		str.push('</div>');
+		return (str.join(''));
+	}
+	this.getDateFormat = function(date){
+		//depending on date format use month,day,year etc
+		var year = date.getFullYear();
+		var month = (date.getMonth()*1)+1;
+		if(month<10){
+			month = '0'+month;
+		}
+		var day = date.getDate();
+		if(day<10){
+			day = '0'+day;
+		}
+	
+		var str = [];
+		str.push(year);
+		str.push(month);
+		str.push(day);
+
+		return str.join('-');
+	}
+	
+	this.generateDays = function(){
+		//deduct 27 days initially
+		var days_to_deduct = (opts['no_inactive_rows']+1)*7;
+		var start_from = this.current_time-(this.day_milliseconds*days_to_deduct);
+
+
+
+		var end_to = this.current_time+(this.day_milliseconds*(this.opts['no_days']+1));
+
+		var applicable_dates = [];
+		for(var i=start_from;i<end_to;i+=this.day_milliseconds){
+			var temp = [];
+			if(i == this.current_time){
+				temp['is_current'] = true;
+			}
+			temp['time'] = i;
+			temp['date_object'] = new Date(i);
+			applicable_dates.push(temp);
+		}
+
+		return applicable_dates;
+	}
+	this.copyDefaultOpts();
+	return this;
+	 
+}
+
+
+function EnableCalendar(object,opts){
+	this.initialized = false;
+	var ws = this;	
+	this.canvas = false;
+	$(object).click(function(event){
+		if(!opts){
+			opts = [];
+		}
+		var target = $(event.target);
+			var offset = target.offset();
+		//remove all other canvases
+		$('.small_calendar_canvas').remove();
+		ws.canvas = false;
+		var canvas = $( "<div class='small_calendar_canvas'/>" );
+		
+		if(!ws.calendar_object){
+			ws.calendar_object = new SmallCalendar(opts).setCurrentVal(target.val()).process()	
+		}
+		if(target.val() !=''){
+			//initialize the value again IF its different than the older object
+			if(new Date(target.val()).getTime() != ws.calendar_object.getCurrentVal()){
+
+					ws.calendar_object.setCurrentVal(target.val()).process();
+
+			}
+		}
+		
+		canvas.html(ws.calendar_object.getHtml());
+		canvas.css('top',(offset.top+10)+'px').css('left',(offset.left)+'px');	
+		canvas.show();
+		if(!ws.canvas){
+			ws.attachDateListener(canvas);
+			ws.attachScrollListner(canvas);
+			
+			ws.canvas = canvas;
+			$( "body" ).append(canvas);
+		}
+		canvas.show();
+		ws.scrollToSelected(canvas);
+		ws.initialized = true;
+		return this;
+	});
+	object.prop('readOnly','readOnly');
+	if(!object.hasClass('js-small-calendar-input'))	{
+		object.addClass('js-small-calendar-input');
+	}
+	this.scrollToSelected = function(obj){
+		var today = obj.find('div.css-today');
+		var dates_holder = obj.find('div.css-dates-holder');
+		var position = today.position();
+		$(dates_holder[0]).scrollTop(position.top);
+		this.changeMonth(obj);
+	}
+
+	this.changeMonth = function (obj){
+		var month_header = obj.find('div.css-month-header');
+		var elements = obj.find('div.css-active');
+		for(var i=0;i <elements.length;i++){
+		var object = $(elements[i]);
+		  var position = object.position();
+		  if(position.top>-30){
+	      		month_header.html(object.data('month'));
+			    return;
+		  }
+		}
+	}
+	this.attachScrollListner = function(obj){
+		var dates_holder = obj.find('div.css-dates-holder');
+		var month_header = obj.find('div.css-month-header');
+		var css_active = obj.find('div.css-month-header');
+		dates_holder.scroll(function(e){
+			ws.changeMonth(obj);
+		});
+	}
+ 	this.attachDateListener = function(obj){
+			var ws = this;
+			obj.click(function(event){
+				var target = $(event.target);
+				if(target.hasClass('js-active')){
+					target.addClass('css-today');
+					object.prop('readOnly','');
+					object.val(target.data('date'));
+					object.prop('readOnly','readOnly');
+					ws.canvas.remove();
+					ws.canvas = false;
+				}
+			});
+			
+		return this;
+	}
+	
+
+	return this;
+}
+$( document ).ready(function() {
+    jQuery.fn.extend({
+	enableCalendar: function(opts){return new EnableCalendar(this,opts)}
+	});
+	$('#date_holder').enableCalendar();
+
+});
+</script>
+<body>
+<input id="date_holder" value="" class="js-small-calendar"/>
+
+
+</body>
+<script type = "text/javascript">
+
+//example options {'no_days':270,'disable_dates':['2015-05-02']}
+
+
+
+</script>
+</html>
+
